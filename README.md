@@ -55,13 +55,41 @@ Sau đó đăng nhập lại provider (auth không nằm trong repo):
 
 ### Bắt đầu một dự án mới
 
-Cách nhanh nhất — ba dòng:
+Ba bước: tạo thư mục → `pinit` (hoặc `pinitw` cho dự án công ty) → `pi`. Cách gõ khác nhau một chút tùy shell.
 
-```bash
-mkdir ~/Projects/du-an-moi && cd ~/Projects/du-an-moi
-pinit          # dự án cá nhân   (pinitw nếu là dự án công ty)
+#### Trên PowerShell (shell mặc định của máy này)
+
+```powershell
+mkdir C:\Users\chungnx\Downloads\project\du-an-moi
+cd    C:\Users\chungnx\Downloads\project\du-an-moi
+pinitw      # dự án công ty   (pinit nếu là dự án cá nhân)
 pi
 ```
+
+`pinit`/`pinitw` khai báo trong PowerShell profile. File đó **không nằm trong repo**, tạo lại bằng:
+
+```powershell
+New-Item -ItemType Directory -Force (Split-Path $PROFILE -Parent) | Out-Null
+@'
+function pinit {
+    & "C:\Program Files\Git\bin\bash.exe" `
+        "$env:USERPROFILE\Projects\chungnx-pi-setup\scripts\new-project.sh" `
+        --personal --agents @args
+}
+function pinitw {
+    & "C:\Program Files\Git\bin\bash.exe" `
+        "$env:USERPROFILE\Projects\chungnx-pi-setup\scripts\new-project.sh" `
+        --work --agents @args
+}
+'@ | Set-Content -Path $PROFILE -Encoding utf8
+. $PROFILE
+```
+
+> ⚠️ Phải gọi **đúng đường dẫn Git Bash**. Gõ `bash` trần trong PowerShell sẽ trúng `C:\…\WindowsApps\bash.exe` — đó là stub của WSL, môi trường hoàn toàn khác và script sẽ không chạy như mong đợi.
+
+Cần `Get-ExecutionPolicy -Scope CurrentUser` ở mức `RemoteSigned` (hoặc thoáng hơn) thì profile mới tự nạp.
+
+#### Trên Git Bash
 
 `pinit` là function khai báo trong `~/.bashrc`. File đó **không nằm trong repo**, nên trên máy mới phải tạo lại:
 
