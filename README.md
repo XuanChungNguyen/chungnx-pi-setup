@@ -55,21 +55,47 @@ Sau đó đăng nhập lại provider (auth không nằm trong repo):
 
 ### Bắt đầu một dự án mới
 
+Cách nhanh nhất — ba dòng:
+
 ```bash
-~/Projects/chungnx-pi-setup/scripts/new-project.sh --personal ~/Projects/abc
-~/Projects/chungnx-pi-setup/scripts/new-project.sh --work /d/work/du-an-x --agents
+mkdir ~/Projects/du-an-moi && cd ~/Projects/du-an-moi
+pinit          # dự án cá nhân   (pinitw nếu là dự án công ty)
+pi
 ```
 
-Script gom các bước hay quên: chuyển `gh` sang đúng tài khoản, `git init -b main`, khai báo `user.name`/`user.email` ở mức **`--local`**, và — chỉ với `--personal` — vá `credential.helper` để push repo private không dính lỗi `Repository not found`.
+`pinit` là function khai báo trong `~/.bashrc`. File đó **không nằm trong repo**, nên trên máy mới phải tạo lại:
+
+```bash
+cat >> ~/.bashrc <<'EOF'
+PI_SETUP="$HOME/Projects/chungnx-pi-setup"
+pinit()  { "$PI_SETUP/scripts/new-project.sh" --personal --agents "$@"; }
+pinitw() { "$PI_SETUP/scripts/new-project.sh" --work     --agents "$@"; }
+EOF
+
+# Git Bash cần .bash_profile nạp .bashrc
+echo '[ -f ~/.bashrc ] && . ~/.bashrc' >> ~/.bash_profile
+source ~/.bashrc
+```
+
+> Dùng **function** chứ không phải `alias`: alias chỉ mở rộng trong shell tương tác, function thì gọi được cả từ script và nhận thêm cờ — `pinit --dry-run` chạy được.
+
+Gọi thẳng script cũng được, không cần function:
+
+```bash
+~/Projects/chungnx-pi-setup/scripts/new-project.sh --personal ~/Projects/abc
+~/Projects/chungnx-pi-setup/scripts/new-project.sh --work /d/work/xyz --agents
+```
+
+Script làm gì: chuyển `gh` sang đúng tài khoản → `git init -b main` → đặt `user.name`/`user.email` ở mức **`--local`** → với `--personal` thì vá `credential.helper` để push repo private không dính lỗi `Repository not found` → `--agents` tạo `AGENTS.md` lấy tên thư mục làm tiêu đề.
 
 | Cờ | |
 |---|---|
 | `--personal` | tài khoản `XuanChungNguyen`, email noreply, kèm vá credential |
 | `--work` | tài khoản `ibim-lab`, email `ibim@innojsc.com` |
-| `--agents` | tạo thêm `AGENTS.md` mẫu nếu chưa có |
+| `--agents` | tạo `AGENTS.md` mẫu nếu chưa có |
 | `--dry-run` | chỉ in ra dự định, không ghi gì |
 
-Thư mục mặc định là thư mục hiện tại; thư mục chưa tồn tại sẽ được tạo. Xong thì chạy `pi` — lần đầu nó hỏi có tin thư mục này không.
+Thư mục mặc định là thư mục hiện tại; thư mục chưa tồn tại sẽ được tạo.
 
 ### Vừa đổi cấu hình → lưu lại (dùng nhiều nhất)
 

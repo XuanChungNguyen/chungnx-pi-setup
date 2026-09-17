@@ -145,8 +145,9 @@ if [ "$DO_AGENTS" -eq 1 ]; then
 		if [ "$DRY_RUN" -eq 1 ]; then
 			printf '   [dry-run] ghi AGENTS.md\n'
 		else
-			cat > AGENTS.md <<'AGENTSEOF'
-# <tên dự án>
+			printf '# %s
+' "$(basename "$(pwd)")" > AGENTS.md
+			cat >> AGENTS.md <<'AGENTSEOF'
 
 ## Bối cảnh
 
