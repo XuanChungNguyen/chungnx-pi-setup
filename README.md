@@ -49,6 +49,97 @@ Sau đó đăng nhập lại provider (auth không nằm trong repo):
 
 ---
 
+## Dùng hằng ngày
+
+> Mọi lệnh chạy trong **Git Bash**, không phải PowerShell.
+
+### Vừa đổi cấu hình → lưu lại (dùng nhiều nhất)
+
+Mỗi khi chỉnh `/advisor-settings`, đổi model, thêm/bớt extension:
+
+```bash
+cd ~/Projects/chungnx-pi-setup
+./scripts/pi-setup-backup.sh --config-dir config    # máy → repo
+git diff                                            # xem đúng cái vừa đổi chưa
+git add -A && git commit -m "chore(config): <mô tả>"
+git push
+```
+
+`git diff` là bước đáng giá nhất: config là JSON phẳng nên thấy chính xác thứ gì đã đổi — kể cả thứ extension tự ghi mà mình không biết.
+
+### Cấu hình hỏng → quay về bản đã lưu
+
+```bash
+./scripts/pi-setup-restore.sh --dry-run            # xem sẽ ghi đè gì
+./scripts/pi-setup-restore.sh --install --verify   # làm thật
+```
+
+Script tự snapshot file cũ thành `*.bak.<timestamp>` trước khi đè.
+
+### Muốn thử nghiệm mà không sợ hỏng
+
+```bash
+./scripts/pi-setup-restore.sh --from-config config --scratch --install
+```
+
+`--scratch` tạo thư mục tạm bằng `mktemp -d` rồi trỏ `PI_CODING_AGENT_DIR` vào đó — setup thật không bị đụng.
+
+### Kiểm tra sức khoẻ
+
+```bash
+node scripts/pi-setup-verify-advisor.mjs --live   # advisor.json còn đúng schema
+pi list                                          # 21 extension còn đủ
+/model-fallback:status                           # có đang bị fallback không
+/cost                                            # chi phí, gồm phần Advisor
+```
+
+### Cờ opt-in của backup (mặc định **không** lấy)
+
+| Cờ | Lấy thêm | Cảnh báo |
+|---|---|---|
+| `--memory` | `memory/` | |
+| `--skills` | `skills/` | 24 MB |
+| `--sessions` | lịch sử chat | ~56 MB |
+| `--missions` | state `pi-goal-x` | **có thể chứa tên khách hàng** |
+| `--auth` | `auth.json` | ⚠️ **chứa credential — đừng commit, kể cả repo private** |
+
+Thêm `--dry-run` vào bất kỳ lệnh nào để chỉ in ra dự định, không ghi gì.
+
+---
+
+## Setup này là của máy, không phải của dự án
+
+Cấu hình `pi` nằm ở `~/.pi/agent/`, dùng chung cho mọi thư mục. **Mở dự án mới không cần làm gì** — 21 extension đã có sẵn.
+
+Cái gì chỉnh được theo từng dự án, cái gì không:
+
+| Thứ | Theo dự án? | Cách làm |
+|---|---|---|
+| Extension bật/tắt | ✅ | `pi config -l` → `<dự-án>/.pi/settings.json` |
+| Hướng dẫn cho agent | ✅ | `AGENTS.md` hoặc `CLAUDE.md` ở gốc dự án |
+| Git identity | ✅ | `git config --local user.email ...` |
+| Cấu hình advisor | ❌ | **Chỉ global** — `pi-advisor-flow` cố ý không cho repo tự đổi |
+| Model mặc định | ❌ | Global, hoặc `pi --model <...>` cho từng lần chạy |
+| `pi-lens` | ❌ | Global ở `~/.pi-lens/config.json` |
+
+Lách cho từng phiên: `pi --model anthropic/claude-sonnet-5`, hoặc `pi -xt ask_advisor` để bỏ tool advisor cho lần chạy đó.
+
+Máy này **không có git identity ở mức global** (cố ý, để tách bạch tài khoản cá nhân và công ty) → mỗi repo mới phải `git config --local` riêng, nếu không commit sẽ báo lỗi.
+
+---
+
+## Bảo trì định kỳ
+
+| Khi nào | Làm gì |
+|---|---|
+| Sau `pi update` | `node scripts/pi-lens-compact-lsp-status.mjs --check` — bản vá pi-lens bị ghi đè (chỉ cần nếu dùng nerd icon) |
+| Khi nâng `pi` | Cập nhật số phiên bản trong README và `lastChangelogVersion` của `settings.json` |
+| Trước việc công ty | `gh auth status` → `gh auth switch --user ibim-lab` |
+
+> **Repo này không tự đồng bộ.** Chỉnh cấu hình trong `pi` thì máy đổi, repo vẫn cũ cho tới khi chạy `backup.sh`. Để lệch lâu rồi mới `restore` là mất phần chỉnh ở giữa — chỉnh xong cái gì thì backup + commit ngay, coi như "lưu game".
+
+---
+
 ## 21 extension
 
 | # | Package | Version | Làm gì |
@@ -167,13 +258,6 @@ chungnx-pi-setup/
     ├── models-store.json           catalog model (đỡ phải chờ refresh 4 tiếng)
     ├── pi-lens-config.json         config pi-lens (thật ra nằm ở ~/.pi-lens/)
     └── external-configs.txt        manifest: file nào đi đâu khi restore
-```
-
-### Cập nhật snapshot sau khi đổi cấu hình
-
-```bash
-./scripts/pi-setup-backup.sh --config-dir config
-node scripts/pi-setup-verify-advisor.mjs --live
 ```
 
 ---
