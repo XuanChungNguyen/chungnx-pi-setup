@@ -53,6 +53,24 @@ Sau đó đăng nhập lại provider (auth không nằm trong repo):
 
 > Mọi lệnh chạy trong **Git Bash**, không phải PowerShell.
 
+### Bắt đầu một dự án mới
+
+```bash
+~/Projects/chungnx-pi-setup/scripts/new-project.sh --personal ~/Projects/abc
+~/Projects/chungnx-pi-setup/scripts/new-project.sh --work /d/work/du-an-x --agents
+```
+
+Script gom các bước hay quên: chuyển `gh` sang đúng tài khoản, `git init -b main`, khai báo `user.name`/`user.email` ở mức **`--local`**, và — chỉ với `--personal` — vá `credential.helper` để push repo private không dính lỗi `Repository not found`.
+
+| Cờ | |
+|---|---|
+| `--personal` | tài khoản `XuanChungNguyen`, email noreply, kèm vá credential |
+| `--work` | tài khoản `ibim-lab`, email `ibim@innojsc.com` |
+| `--agents` | tạo thêm `AGENTS.md` mẫu nếu chưa có |
+| `--dry-run` | chỉ in ra dự định, không ghi gì |
+
+Thư mục mặc định là thư mục hiện tại; thư mục chưa tồn tại sẽ được tạo. Xong thì chạy `pi` — lần đầu nó hỏi có tin thư mục này không.
+
 ### Vừa đổi cấu hình → lưu lại (dùng nhiều nhất)
 
 Mỗi khi chỉnh `/advisor-settings`, đổi model, thêm/bớt extension:
@@ -249,7 +267,8 @@ chungnx-pi-setup/
 │   ├── pi-setup-backup.sh           đóng gói setup của máy hiện tại
 │   ├── pi-setup-restore.sh          dựng lại trên máy mới
 │   ├── pi-setup-verify-advisor.mjs  kiểm advisor.json theo schema thật của extension
-│   └── pi-lens-compact-lsp-status.mjs  vá pi-lens cho dòng LSP gọn lại
+│   ├── pi-lens-compact-lsp-status.mjs  vá pi-lens cho dòng LSP gọn lại
+│   └── new-project.sh               khởi tạo git cho dự án mới, đúng danh tính
 └── config/                          bản chụp setup (plain file, git-diff được)
     ├── .pi-setup-exclude           glob loại trừ khi mirror
     ├── settings.json               manifest 21 package + model/theme/compaction
