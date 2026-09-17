@@ -1,0 +1,7 @@
+# File/đường dẫn KHÔNG đưa vào repo này.
+# Mỗi dòng 1 glob, tính từ gốc thư mục config/. Dấu # bắt đầu comment.
+# Được scripts/pi-setup-backup.sh --config-dir tôn trọng khi mirror.
+
+# State của pi-advisor-flow (salt + log outcome) — state theo máy, không phải setup
+advisor-outcomes.jsonl
+advisor-outcomes-salt
