@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {planTeam,executeTeam,parseEvents} from '../scripts/team.mjs';
+const plan=()=>planTeam({model:'test/executor',reviewModel:'test/reviewer',seconds:5});
+test('team uses read-only reviewer/planner and finite phase budgets',()=>{const p=plan();assert.equal(p.length,3);assert.ok(!p[0].tools.includes('write'));assert.ok(!p[2].tools.includes('bash'));assert.throws(()=>planTeam({model:'x/y',reviewModel:'x/y',seconds:0}));});
+test('review approval is required and handoffs include original task',()=>{let calls=0;const status=executeTeam(plan(),'my task',(_,handoff)=>{assert.match(handoff,/my task/);return ++calls===3?'Evidence\nVERDICT: PASS':'done';},()=>{});assert.equal(status,'passed');assert.equal(calls,3);});
+test('blocked planner stops before implementation',()=>{let calls=0;assert.equal(executeTeam(plan(),'task',()=>{calls++;return 'BLOCKED: missing requirement';},()=>{}),'blocked');assert.equal(calls,1);});
+test('review changes does not trigger an unbounded retry',()=>{let calls=0;assert.equal(executeTeam(plan(),'task',()=>++calls===3?'VERDICT: CHANGES':'done',()=>{}),'changes-required');assert.equal(calls,3);});
+test('missing verdict cannot pass',()=>assert.equal(executeTeam(plan(),'task',()=> 'looks good',()=>{}),'blocked'));
+test('execution failure propagates without running next phase',()=>{let calls=0;assert.throws(()=>executeTeam(plan(),'task',()=>{calls++;throw new Error('timeout');},()=>{}));assert.equal(calls,1);});
+test('reviewer receives planner criteria as well as implementation evidence',()=>{executeTeam(plan(),'task',(phase,input)=>{if(phase.role==='planner')return 'criterion: preserve headers';if(phase.role==='implementer')return 'tested headers';assert.match(input,/preserve headers/);assert.match(input,/tested headers/);return 'VERDICT: PASS';},()=>{});});
+test('JSON events preserve final output and provider usage',()=>{const stream=[{type:'message_end',message:{role:'assistant',content:[{type:'text',text:'VERDICT: PASS'}],stopReason:'stop',usage:{input:5,output:3}}},{type:'agent_end'}].map(JSON.stringify).join('\n');assert.deepEqual(parseEvents(stream),{output:'VERDICT: PASS',usage:[{input:5,output:3}]});});
+test('truncated/model-error streams cannot pass',()=>{assert.throws(()=>parseEvents('{"type":"agent_start"}\n'));assert.throws(()=>parseEvents('{"type":"message_end","message":{"role":"assistant","stopReason":"error"}}\n{"type":"agent_end"}'));});

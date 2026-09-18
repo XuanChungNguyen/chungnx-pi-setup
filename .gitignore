@@ -9,3 +9,23 @@ pi-setup-install.log
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Generated setup, credentials, state and dependencies
+.local/
+node_modules/
+**/auth.json
+**/auth.json.bak.*
+**/.env
+**/.env.*
+!**/.env.example
+**/sessions/
+**/missions/
+**/memory/
+**/*.log
+**/*.bak.*
+**/*.tmp-*
+*.bundle.json
+*.tar.gz
+backups/
+journals/
+coverage/
