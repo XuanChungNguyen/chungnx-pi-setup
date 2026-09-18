@@ -1,342 +1,181 @@
-# chungnx-pi-setup
+# Pi setup template
 
-**Bản chụp cấu hình [`pi`](https://github.com/earendil-works/pi) của tôi — clone về là dựng lại được toàn bộ 21 extension trên máy mới.**
+Bộ cấu hình Pi có phiên bản, profile, backup/restore và rollback. Dùng trực tiếp
+trên PowerShell, Git Bash, Linux hoặc macOS qua Node CLI.
 
-pi `0.85.1` · Node `24` · Windows (Git Bash) · cập nhật 2026-09-17
+**Trạng thái: bản ứng viên 0.1.0, chưa phát hành.** Đọc [điều kiện phát hành](docs/RELEASE-CHECKLIST.md)
+và [nguồn gốc/giấy phép](RIGHTS.md). Không xem test cấu hình là bằng chứng mọi extension
+đã chạy thành công hoặc tài khoản model đã hoạt động.
 
----
+## Bắt đầu
 
-## Repo này để làm gì
+Cần Node **24.18.0+ trong nhánh 24**. Cài Git nếu dùng chức năng khởi tạo dự án.
+Không cần cài Pi global; runtime được cài riêng trong thư mục Pi được chọn.
 
-`pi` không có chức năng export/import cấu hình. Repo này là cách mang **toàn bộ setup** sang máy khác mà không phải chép cache.
+Một lệnh sau khi clone (thay model bằng ID dùng được với tài khoản của bạn):
 
-Cơ chế: `settings.json` có mảng `packages`; `pi` đọc mảng đó lúc khởi động và tự `npm install` những gì còn thiếu. Mang được manifest là mang được cả bộ extension.
+```bash
+node scripts/pi-setup.mjs setup --profile minimal --provider openai-codex --model gpt-5.6-sol
+```
 
-Những thứ **cố tình không** đưa vào repo:
+Lệnh này restore, cài runtime và verify. Thêm `--dry-run` để xem trước hoặc
+`--scratch` để chỉ thử khôi phục file. Nếu muốn kiểm tra từng bước:
 
-| Không có | Vì sao |
+```bash
+git clone https://github.com/XuanChungNguyen/chungnx-pi-setup.git
+cd chungnx-pi-setup
+
+# Thay provider/model bằng ID tài khoản của bạn sử dụng được
+node scripts/pi-setup.mjs configure --profile minimal --provider openai-codex --model gpt-5.6-sol
+node scripts/pi-setup.mjs doctor --from-config .local/config --strict
+node scripts/pi-setup.mjs restore --from-config .local/config --scratch
+
+# Đóng Pi trước khi áp dụng; xem thay đổi rồi mới ghi
+node scripts/pi-setup.mjs restore --from-config .local/config --dry-run
+node scripts/pi-setup.mjs restore --from-config .local/config --install --verify
+```
+
+Restore in đường dẫn journal để quay lui. Install chạy `npm ci --ignore-scripts`
+từ lockfile đã lưu; lỗi install hoặc verify trả mã lỗi. Sau đó mở Pi, `/login`
+cho provider đã chọn. Executable nằm trong:
+
+```text
+<PI_DIR>/npm/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js
+```
+
+Chạy bằng `node <đường-dẫn-trên>`. `PI_DIR` mặc định là `~/.pi/agent`, hoặc
+`PI_CODING_AGENT_DIR`. Khi chạy Pi với thư mục tùy chọn, đặt biến môi trường này
+đúng đích; `--target` của setup không thay môi trường shell của bạn.
+
+## Profile và phiên bản
+
+| Profile | Nội dung |
 |---|---|
-| `~/.pi/agent/npm/` | cache, `pi` tự cài lại từ `settings.json` |
-| `~/.pi/agent/auth.json` | **chứa API key + OAuth token** — đăng nhập lại trên máy mới |
-| `sessions/`, `missions/` | lịch sử và state theo máy |
-| `model-fallback/state.json` | state cooldown theo máy, không phải setup |
+| `minimal` | Pi core, không extension; phù hợp kiểm chứng cài đặt ban đầu |
+| `coding` | 6 extension: subagents, simplify, lens, advisor, fallback, hỏi người dùng |
+| `full` | 17 extension từ snapshot qua được kiểm tra peer dependency và audit mức cao |
 
----
-
-## Dựng lại trên máy mới
-
-```bash
-# 1) cài pi đúng phiên bản
-npm i -g @earendil-works/pi-coding-agent@0.85.1
-
-# 2) clone
-git clone <repo-url> && cd chungnx-pi-setup
-
-# 3) diễn tập vào thư mục tạm — không đụng gì tới cấu hình thật
-./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
-
-# 4) làm thật
-./scripts/pi-setup-restore.sh --install --verify
-```
-
-Sau đó đăng nhập lại provider (auth không nằm trong repo):
-
-```
-/login    # trong pi, cho openai-codex và anthropic
-```
-
-> **Windows:** script là **bash** → chạy trong **Git Bash** (hoặc WSL), **không phải** PowerShell/cmd.
-
----
-
-## Dùng hằng ngày
-
-> Mọi lệnh chạy trong **Git Bash**, không phải PowerShell.
-
-### Bắt đầu một dự án mới
-
-Ba bước: tạo thư mục → `pinit` (hoặc `pinitw` cho dự án công ty) → `pi`. Cách gõ khác nhau một chút tùy shell.
-
-#### Trên PowerShell (shell mặc định của máy này)
-
-```powershell
-mkdir C:\Users\chungnx\Downloads\project\du-an-moi
-cd    C:\Users\chungnx\Downloads\project\du-an-moi
-pinitw      # dự án công ty   (pinit nếu là dự án cá nhân)
-pi
-```
-
-`pinit`/`pinitw` khai báo trong PowerShell profile. File đó **không nằm trong repo**, tạo lại bằng:
-
-```powershell
-New-Item -ItemType Directory -Force (Split-Path $PROFILE -Parent) | Out-Null
-@'
-function pinit {
-    & "C:\Program Files\Git\bin\bash.exe" `
-        "$env:USERPROFILE\Projects\chungnx-pi-setup\scripts\new-project.sh" `
-        --personal --agents @args
-}
-function pinitw {
-    & "C:\Program Files\Git\bin\bash.exe" `
-        "$env:USERPROFILE\Projects\chungnx-pi-setup\scripts\new-project.sh" `
-        --work --agents @args
-}
-'@ | Set-Content -Path $PROFILE -Encoding utf8
-. $PROFILE
-```
-
-> ⚠️ Phải gọi **đúng đường dẫn Git Bash**. Gõ `bash` trần trong PowerShell sẽ trúng `C:\…\WindowsApps\bash.exe` — đó là stub của WSL, môi trường hoàn toàn khác và script sẽ không chạy như mong đợi.
-
-Cần `Get-ExecutionPolicy -Scope CurrentUser` ở mức `RemoteSigned` (hoặc thoáng hơn) thì profile mới tự nạp.
-
-#### Trên Git Bash
-
-`pinit` là function khai báo trong `~/.bashrc`. File đó **không nằm trong repo**, nên trên máy mới phải tạo lại:
+`template.json` là manifest phiên bản trực tiếp. `runtime/<profile>/package-lock.json`
+ghim cả dependency gián tiếp và integrity. Không dùng `--force`/`--legacy-peer-deps`.
+Bốn package bị loại khỏi profile mới: `pi-background-tasks@2.5.0`,
+`pi-goal-x@0.31.5`, `@pi-unipi/notify@2.20.1` có peer range không nhận Pi 0.85.1;
+`pi-worktree@1.3.3` kéo Pi 0.73.1 đã deprecated và dependency có cảnh báo bảo mật mức cao.
 
 ```bash
-cat >> ~/.bashrc <<'EOF'
-PI_SETUP="$HOME/Projects/chungnx-pi-setup"
-pinit()  { "$PI_SETUP/scripts/new-project.sh" --personal --agents "$@"; }
-pinitw() { "$PI_SETUP/scripts/new-project.sh" --work     --agents "$@"; }
-EOF
-
-# Git Bash cần .bash_profile nạp .bashrc
-echo '[ -f ~/.bashrc ] && . ~/.bashrc' >> ~/.bash_profile
-source ~/.bashrc
+node scripts/pi-setup.mjs configure --profile coding --provider openai-codex --model gpt-5.6-sol --advisor anthropic/claude-opus-5 --output .local/coding
 ```
 
-> Dùng **function** chứ không phải `alias`: alias chỉ mở rộng trong shell tương tác, function thì gọi được cả từ script và nhận thêm cờ — `pinit --dry-run` chạy được.
+Configure chỉ ghi vào thư mục rỗng; tạo thư mục mới khi đổi profile/nâng cấp.
+Fallback mặc định tắt để tránh tự chuyển dữ liệu sang provider khác. Advisor bật
+redaction và tắt gửi nội dung file tracked/untracked mặc định; vẫn cần xem xét
+dữ liệu hội thoại gửi tới provider. `warn-and-continue` là cổng tư vấn, không phải
+bảo đảm đã được reviewer duyệt.
 
-Gọi thẳng script cũng được, không cần function:
+Full có prerequisite riêng: pi-smart-fetch yêu cầu Bun >=1.3.0; browser/desktop
+và native modules cần thiết lập theo tài liệu của extension. Vì install tắt lifecycle
+scripts, một số tính năng native cần bước chuẩn bị riêng. Không bật lại tất cả
+scripts một cách mù quáng chỉ để làm kiểm tra thành công.
+
+## Backup, restore và rollback
 
 ```bash
-~/Projects/chungnx-pi-setup/scripts/new-project.sh --personal ~/Projects/abc
-~/Projects/chungnx-pi-setup/scripts/new-project.sh --work /d/work/xyz --agents
+node scripts/pi-setup.mjs backup --output .local/my-setup.bundle.json
+node scripts/pi-setup.mjs backup --config-dir .local/export
+node scripts/pi-setup.mjs restore --bundle .local/my-setup.bundle.json --dry-run
+node scripts/pi-setup.mjs restore --bundle .local/my-setup.bundle.json
+node scripts/pi-setup.mjs rollback --journal PATH_PRINTED_BY_RESTORE --dry-run
+node scripts/pi-setup.mjs rollback --journal PATH_PRINTED_BY_RESTORE
 ```
 
-Script làm gì: chuyển `gh` sang đúng tài khoản → `git init -b main` → đặt `user.name`/`user.email` ở mức **`--local`** → với `--personal` thì vá `credential.helper` để push repo private không dính lỗi `Repository not found` → `--agents` tạo `AGENTS.md` lấy tên thư mục làm tiêu đề.
-
-| Cờ | |
-|---|---|
-| `--personal` | tài khoản `XuanChungNguyen`, email noreply, kèm vá credential |
-| `--work` | tài khoản `ibim-lab`, email `ibim@innojsc.com` |
-| `--agents` | tạo `AGENTS.md` mẫu nếu chưa có |
-| `--dry-run` | chỉ in ra dự định, không ghi gì |
-
-Thư mục mặc định là thư mục hiện tại; thư mục chưa tồn tại sẽ được tạo.
-
-### Vừa đổi cấu hình → lưu lại (dùng nhiều nhất)
-
-Mỗi khi chỉnh `/advisor-settings`, đổi model, thêm/bớt extension:
+Nâng cấp có nguồn rõ ràng và xem trước:
 
 ```bash
-cd ~/Projects/chungnx-pi-setup
-./scripts/pi-setup-backup.sh --config-dir config    # máy → repo
-git diff                                            # xem đúng cái vừa đổi chưa
-git add -A && git commit -m "chore(config): <mô tả>"
-git push
+node scripts/pi-setup.mjs upgrade --from-config .local/new-version --dry-run
+node scripts/pi-setup.mjs upgrade --from-config .local/new-version --install --verify
 ```
 
-`git diff` là bước đáng giá nhất: config là JSON phẳng nên thấy chính xác thứ gì đã đổi — kể cả thứ extension tự ghi mà mình không biết.
+- Backup chỉ lấy setup được khai báo, không lấy auth, sessions, missions, memory,
+  npm cache hay model catalog cache. Secret khả nghi chặn xuất và không in giá trị.
+- Bundle là JSON có SHA-256 từng file; phát hiện hỏng dữ liệu, **không xác thực tác giả**.
+- Scratch chỉ copy file vào HOME tạm, kể cả Pi Lens; không chạy Pi hoặc extension.
+  `--scratch --install/--verify` bị từ chối. Thư mục được giữ để kiểm tra, có thể xóa sau.
+- Dry-run không ghi. Symlink/junction và đường dẫn nguồn/đích chồng nhau bị từ chối.
+- Mỗi giao dịch lưu nội dung trước đó của mọi file bị tác động. Lỗi ghi sẽ thử
+  khôi phục tự động; journal vẫn được giữ. Rollback bảo vệ các chỉnh sửa mới hơn.
+- Journal nằm ở `~/.pi-setup/journals`, có thể chứa dữ liệu nhạy cảm cũ; không commit
+  hoặc chia sẻ. Không dùng journal của người khác.
+- Rollback chỉ phục hồi file cấu hình. Chạy lại install để dựng node_modules theo
+  lockfile cũ. Đóng mọi phiên Pi/setup đang chạy trước khi đổi cấu hình.
 
-### Cấu hình hỏng → quay về bản đã lưu
+Xem [migration và xử lý gián đoạn](docs/MIGRATION.md). Tarball cũ và các cờ xuất
+credential/state không còn được hỗ trợ; không có chuyển đổi ngầm.
+
+## Kiểm tra sức khỏe
 
 ```bash
-./scripts/pi-setup-restore.sh --dry-run            # xem sẽ ghi đè gì
-./scripts/pi-setup-restore.sh --install --verify   # làm thật
+node scripts/pi-setup.mjs doctor --from-config .local/config --strict
+node scripts/pi-setup.mjs doctor --live
+node scripts/pi-setup.mjs doctor --live --smoke             # timeout mặc định 60 giây
+node scripts/pi-setup.mjs doctor --live --smoke --timeout 120  # profile full/máy chậm
 ```
 
-Script tự snapshot file cũ thành `*.bak.<timestamp>` trước khi đè.
+`doctor` kiểm JSON, phiên bản package, tham chiếu model; `--strict` kiểm lockfile;
+`--live` đối chiếu phiên bản đã cài. Auth được kiểm sự hiện diện, không đọc/in token
+và không chứng minh đăng nhập còn hiệu lực. `--smoke` chạy Pi và extension, gửi RPC
+`get_state`, không gửi prompt model. Chỉ chạy với extension đã tin cậy; đây không phải sandbox.
+`--timeout` nhận 1..300 giây và chỉ giới hạn probe RPC.
 
-### Muốn thử nghiệm mà không sợ hỏng
+## Workflow ba vai trò
 
 ```bash
-./scripts/pi-setup-restore.sh --from-config config --scratch --install
+node scripts/team.mjs --task-file task.md --project PATH_TO_PROJECT --model openai-codex/gpt-5.6-sol --review-model anthropic/claude-opus-5 --dry-run
 ```
 
-`--scratch` tạo thư mục tạm bằng `mktemp -d` rồi trỏ `PI_CODING_AGENT_DIR` vào đó — setup thật không bị đụng.
+Bỏ `--dry-run` để thực thi sau khi cấu hình auth. Planner/reviewer chỉ có công cụ
+đọc; implementer có công cụ sửa file và shell. Runner tắt auto-discovery extension,
+skills, prompt templates và không tự phê duyệt tài nguyên dự án. Hướng dẫn vai trò
+nằm trong `templates/agents/`; đây là workflow riêng, không phụ thuộc pi-subagents.
 
-### Kiểm tra sức khoẻ
+Tối đa **3 phiên gọi Pi**, mặc định **300 giây/pha** (`--timeout` đổi trong 1..1800).
+Không tự chạy lại khi lỗi hoặc reviewer yêu cầu sửa. Reviewer phải kết thúc bằng
+`VERDICT: PASS`; verdict thiếu/sai không được xem là thành công. Kết quả và trạng thái
+lưu trong `.local/runs/`. Giới hạn này **không phải hard cap USD/token/API requests**;
+Transcript JSONL giữ tool events và báo cáo usage từ provider để đối chiếu chi phí;
+mỗi pha có thể thực hiện nhiều lượt model/tool. Đặt hạn mức tại provider nếu cần
+trần chi phí cứng. Timeout không thay sandbox hệ điều hành hoặc bảo đảm dọn mọi
+process con do shell tạo. Chạy trong worktree/môi trường phù hợp và xem diff sau đó.
+
+## Khởi tạo dự án
 
 ```bash
-node scripts/pi-setup-verify-advisor.mjs --live   # advisor.json còn đúng schema
-pi list                                          # 21 extension còn đủ
-/model-fallback:status                           # có đang bị fallback không
-/cost                                            # chi phí, gồm phần Advisor
+node scripts/pi-setup.mjs project --project PATH_TO_PROJECT --name YOUR_NAME --email YOUR_EMAIL --agents
 ```
 
-### Cờ opt-in của backup (mặc định **không** lấy)
+Chỉ đổi Git identity local, không chuyển tài khoản `gh`, không đổi credential helper
+hay ghi đè PowerShell profile. Hỗ trợ repo/worktree hiện hữu; không ghi đè AGENTS.md.
+Điền bối cảnh và lệnh test trong AGENTS.md trước khi giao việc.
 
-| Cờ | Lấy thêm | Cảnh báo |
-|---|---|---|
-| `--memory` | `memory/` | |
-| `--skills` | `skills/` | 24 MB |
-| `--sessions` | lịch sử chat | ~56 MB |
-| `--missions` | state `pi-goal-x` | **có thể chứa tên khách hàng** |
-| `--auth` | `auth.json` | ⚠️ **chứa credential — đừng commit, kể cả repo private** |
+## Bảo trì và cấu trúc
 
-Thêm `--dry-run` vào bất kỳ lệnh nào để chỉ in ra dự định, không ghi gì.
-
----
-
-## Setup này là của máy, không phải của dự án
-
-Cấu hình `pi` nằm ở `~/.pi/agent/`, dùng chung cho mọi thư mục. **Mở dự án mới không cần làm gì** — 21 extension đã có sẵn.
-
-Cái gì chỉnh được theo từng dự án, cái gì không:
-
-| Thứ | Theo dự án? | Cách làm |
-|---|---|---|
-| Extension bật/tắt | ✅ | `pi config -l` → `<dự-án>/.pi/settings.json` |
-| Hướng dẫn cho agent | ✅ | `AGENTS.md` hoặc `CLAUDE.md` ở gốc dự án |
-| Git identity | ✅ | `git config --local user.email ...` |
-| Cấu hình advisor | ❌ | **Chỉ global** — `pi-advisor-flow` cố ý không cho repo tự đổi |
-| Model mặc định | ❌ | Global, hoặc `pi --model <...>` cho từng lần chạy |
-| `pi-lens` | ❌ | Global ở `~/.pi-lens/config.json` |
-
-Lách cho từng phiên: `pi --model anthropic/claude-sonnet-5`, hoặc `pi -xt ask_advisor` để bỏ tool advisor cho lần chạy đó.
-
-Máy này **không có git identity ở mức global** (cố ý, để tách bạch tài khoản cá nhân và công ty) → mỗi repo mới phải `git config --local` riêng, nếu không commit sẽ báo lỗi.
-
----
-
-## Bảo trì định kỳ
-
-| Khi nào | Làm gì |
-|---|---|
-| Sau `pi update` | `node scripts/pi-lens-compact-lsp-status.mjs --check` — bản vá pi-lens bị ghi đè (chỉ cần nếu dùng nerd icon) |
-| Khi nâng `pi` | Cập nhật số phiên bản trong README và `lastChangelogVersion` của `settings.json` |
-| Trước việc công ty | `gh auth status` → `gh auth switch --user ibim-lab` |
-
-> **Repo này không tự đồng bộ.** Chỉnh cấu hình trong `pi` thì máy đổi, repo vẫn cũ cho tới khi chạy `backup.sh`. Để lệch lâu rồi mới `restore` là mất phần chỉnh ở giữa — chỉnh xong cái gì thì backup + commit ngay, coi như "lưu game".
-
----
-
-## 21 extension
-
-| # | Package | Version | Làm gì |
-|---|---|---|---|
-| 1 | `pi-web-access` | 0.29.0 | web search, tải URL, clone repo GitHub, đọc PDF, hiểu video |
-| 2 | `pi-smart-fetch` | 0.3.17 **(ghim)** | `web_fetch` với TLS fingerprint của trình duyệt desktop → qua được trang chặn bot |
-| 3 | `pi-mcp-adapter` | 2.34.0 | cắm MCP server |
-| 4 | `pi-subagents` | 0.68.0 | giao việc cho agent phụ, workflow nhiều agent |
-| 5 | `pi-background-tasks` | 2.5.0 | chạy lệnh shell nền, agent chỉ-đọc |
-| 6 | `pi-goal-x` | 0.31.5 | `/goal` — mục tiêu, tiến độ bền qua nhiều phiên, auditor kiểm tra |
-| 7 | `pi-memory` | 0.4.2 | bộ nhớ + tìm kiếm ngữ nghĩa |
-| 8 | `pi-worktree` | 1.3.3 | quản lý git worktree |
-| 9 | `pi-simplify` | 0.2.3 | soi code vừa sửa về độ rõ ràng, dễ bảo trì |
-| 10 | `pi-lens` | 4.2.0 | LSP: chẩn đoán lỗi, điều hướng symbol, `symbol_search` |
-| 11 | `pi-footer` | 0.5.1 | statusline nhiều dòng |
-| 12 | `pi-model-fallback` | 0.4.0 | đổi model theo rule khi provider lỗi 429/5xx |
-| 13 | `pi-advisor-flow` | 0.6.0 | luồng Executor/Advisor — ý kiến thứ hai ở các cổng duyệt |
-| 14 | `@narumitw/pi-usage` | 0.60.8 | hiển thị mức tiêu thụ tài khoản |
-| 15 | `@tmustier/pi-session-recap` | 0.5.0 | tóm tắt "trong lúc bạn vắng mặt" |
-| 16 | `@99percentpeople/pi-todo` | 1.2.7 | todo tối giản, state sống sót qua compaction |
-| 17 | `@juicesharp/rpiv-ask-user-question` | 2.10.1 | hỏi bằng trắc nghiệm thay vì đoán |
-| 18 | `@juicesharp/rpiv-btw` | 2.10.1 | `/btw` — hỏi nhanh không làm bẩn hội thoại |
-| 19 | `@pi-unipi/notify` | 2.20.1 | thông báo khi agent xong/lỗi (⚠ config chứa credential — không backup) |
-| 20 | `pi-browser-use` | 0.11.7 | agent điều khiển Chrome qua `chrome-devtools-mcp` |
-| 21 | `@injaneity/pi-computer-use` | 0.5.1 | điều khiển ứng dụng desktop qua accessibility API |
-
-Bản gốc có 22 — repo này **bỏ `pi-powerline-footer`** (chỉ cài để tắt, không dùng).
-
-> Version là **để tham khảo tại thời điểm chụp**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` bị ghim cứng.
-
----
-
-## Cấu hình model
-
-Ba file phối hợp với nhau, phải nhất quán:
-
-```
-settings.json  defaultModel = openai-codex/gpt-5.6-sol   ┐ khớp nhau
-advisor.json   executor     = openai-codex/gpt-5.6-sol   ┘
-advisor.json   advisor      = anthropic/claude-opus-5
+```bash
+npm run check
+npm test
+npm run doctor
 ```
 
-**Ý đồ:** model nhanh làm mọi lượt, model mạnh chỉ vào cuộc ở các cổng duyệt (trước khi lập kế hoạch, sau thất bại lặp lại, trước khi tuyên bố xong). Hai model **khác provider** để ý kiến thứ hai thực sự độc lập.
-
-### `pi-advisor-flow`
-
-| Khoá | Giá trị | Vì sao |
-|---|---|---|
-| `advisorEffort` | `low` | đủ dùng, rẻ |
-| `advisorScoutEnabled` | `false` | Scout là **experimental**, tốn thêm một lượt gọi model trước mỗi lần hỏi Advisor |
-| `gateFailureMode` | `warn-and-continue` | cổng duyệt trục trặc thì cảnh báo rồi đi tiếp, không chặn việc |
-| `advisorRedactSecrets` | `true` | che secret trước khi gửi sang Advisor |
-
-### `pi-model-fallback`
-
-```
-openai-codex gặp 429/500/502/503/504  →  anthropic/claude-sonnet-5
-cooldownMs: 18000000  (5 giờ)
+```text
+scripts/pi-setup.mjs       CLI đa nền tảng
+scripts/lib/setup.mjs     kiểm tra file, backup, journal, rollback
+scripts/team.mjs          workflow hữu hạn với bằng chứng từng pha
+config/                   cấu hình minimal mặc định và runtime lock
+runtime/                  manifest + lock cho từng profile
+templates/                cấu hình, hướng dẫn dự án và vai trò mẫu
+tests/                    regression tests không cần model/API key
+.github/workflows/ci.yml   kiểm thử đa nền tảng và cài từ lockfile
+docs/                     migration, điều kiện phát hành
 ```
 
-Hai điều cần nhớ:
-
-- **Chuyển tự động, không hỏi.** `autoRetry` còn tự chạy lại câu hỏi vừa thất bại trên model mới.
-- **Cooldown mặc định của 429 là 72 giờ** — quá dài so với cửa sổ 5 giờ của codex, nên rule này đặt `cooldownMs` 5 giờ.
-
-Fallback cố ý trỏ vào `claude-sonnet-5` chứ không phải `claude-opus-5`: Advisor đã nằm trên Opus 5, nếu executor cũng fallback sang đó thì khi anthropic nghẽn **cả hai vai cùng chết**.
-
-```
-/model-fallback:status    # đang fallback không, còn bao lâu
-/model-fallback:reset     # quay lại model gốc ngay
-```
-
-### `pi-lens`
-
-Config nằm ở `~/.pi-lens/config.json` — **ngoài** config dir của pi, nên `external-configs.txt` làm bản đồ chỉ đường khi restore.
-
-```json
-{
-  "lsp":     { "enabled": true },
-  "widget":  { "visible": false },
-  "format":  { "enabled": false },
-  "autofix": { "enabled": false }
-}
-```
-
-`format` và `autofix` mặc định của package là `true` — nghĩa là nó **tự format và tự sửa code bạn đang viết**. Ở đây tắt cả hai; chỉ giữ LSP.
-
----
-
-## Chưa cấu hình (làm khi cần)
-
-| Extension | Cần gì |
-|---|---|
-| `pi-footer` | layout statusline. Mặc định `iconMode: "emoji"` chạy được với font thường; chỉ `"nerd"` mới cần Nerd Font |
-| `@pi-unipi/notify` | token Gotify/Telegram — `/unipi:notify-set-gotify`, `/unipi:notify-set-tg` |
-| `@injaneity/pi-computer-use` | setup lần đầu **bắt buộc trong phiên `pi` tương tác**; ở chế độ `-p` extension nằm im |
-
----
-
-## Trong repo có gì
-
-```
-chungnx-pi-setup/
-├── README.md
-├── .gitattributes                   ép *.sh dùng LF (cần cho Windows)
-├── scripts/
-│   ├── pi-setup-backup.sh           đóng gói setup của máy hiện tại
-│   ├── pi-setup-restore.sh          dựng lại trên máy mới
-│   ├── pi-setup-verify-advisor.mjs  kiểm advisor.json theo schema thật của extension
-│   ├── pi-lens-compact-lsp-status.mjs  vá pi-lens cho dòng LSP gọn lại
-│   └── new-project.sh               khởi tạo git cho dự án mới, đúng danh tính
-└── config/                          bản chụp setup (plain file, git-diff được)
-    ├── .pi-setup-exclude           glob loại trừ khi mirror
-    ├── settings.json               manifest 21 package + model/theme/compaction
-    ├── advisor.json                config pi-advisor-flow
-    ├── model-fallback/config.json  rule fallback
-    ├── models-store.json           catalog model (đỡ phải chờ refresh 4 tiếng)
-    ├── pi-lens-config.json         config pi-lens (thật ra nằm ở ~/.pi-lens/)
-    └── external-configs.txt        manifest: file nào đi đâu khi restore
-```
-
----
-
-## Ghi chú
-
-**Nguồn gốc script.** Bốn script trong `scripts/` lấy từ [`zuey-pi-setup`](https://github.com/mrgoonie/zuey-pi-setup) của mrgoonie. Repo đó **không kèm giấy phép** ("all rights belong to the author"), nên repo này để **private**. Nếu sau này muốn chuyển sang public thì phải xin phép tác giả hoặc thay bằng script tự viết.
-
-**Đây là snapshot cá nhân**, không phải sản phẩm chính thức của `pi` hay của bất kỳ package nào liệt kê ở trên. Các extension bên thứ ba giữ giấy phép riêng của chúng.
+Nâng phiên bản trong manifest rồi tạo lại lock của profile liên quan, chạy tests/CI,
+thử trên máy sạch, cập nhật changelog và phát hành có phiên bản. Không sửa trực tiếp
+lockfile để né xung đột. Snapshot cá nhân và helper cũ không nằm trong cây phát hành;
+có thể tra cứu trong lịch sử Git khi thật sự cần.

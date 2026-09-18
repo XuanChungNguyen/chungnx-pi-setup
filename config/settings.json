@@ -5,36 +5,9 @@
   "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "medium",
   "tuiMode": "regular",
-  "packages": [
-    "npm:pi-web-access",
-    "npm:pi-smart-fetch@0.3.17",
-    "npm:pi-mcp-adapter",
-    "npm:pi-subagents",
-    "npm:pi-background-tasks",
-    "npm:pi-goal-x",
-    "npm:pi-memory",
-    "npm:pi-worktree",
-    "npm:pi-simplify",
-    "npm:pi-lens",
-    "npm:pi-footer",
-    "npm:pi-model-fallback",
-    "npm:pi-advisor-flow",
-    "npm:@narumitw/pi-usage",
-    "npm:@tmustier/pi-session-recap",
-    "npm:@99percentpeople/pi-todo",
-    "npm:@juicesharp/rpiv-ask-user-question",
-    "npm:@juicesharp/rpiv-btw",
-    "npm:@pi-unipi/notify",
-    "npm:pi-browser-use",
-    "npm:@injaneity/pi-computer-use"
-  ],
+  "packages": [],
   "enabledModels": [
-    "openai-codex/gpt-5.5",
-    "openai-codex/gpt-5.6-sol",
-    "openai-codex/gpt-6-astra",
-    "anthropic/claude-haiku-4-5",
-    "anthropic/claude-sonnet-5",
-    "anthropic/claude-opus-5"
+    "openai-codex/gpt-5.6-sol"
   ],
   "showCacheMissNotices": true,
   "thinkingBudgets": {
@@ -47,8 +20,8 @@
     "keepRecentTokens": 20000
   },
   "retry": {
-    "enabled": true,
-    "maxRetries": 3
+    "enabled": false,
+    "maxRetries": 0
   },
   "markdown": {
     "mermaid": "streaming"
