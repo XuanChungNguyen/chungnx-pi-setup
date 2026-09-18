@@ -3,10 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "pi-setup": "scripts/pi-setup.mjs",
+    "pi-team": "scripts/team.mjs"
+  },
+  "files": [
+    "config/",
+    "docs/",
+    "runtime/",
+    "scripts/",
+    "templates/",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "RIGHTS.md",
+    "SECURITY.md",
+    "template.json"
+  ],
   "engines": { "node": ">=24.18.0 <25" },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "doctor": "node scripts/pi-setup.mjs doctor --from-config config",
-    "check": "node --check scripts/pi-setup.mjs && node --check scripts/lib/setup.mjs && node --check scripts/team.mjs"
+    "check": "node --check scripts/pi-setup.mjs && node --check scripts/lib/setup.mjs && node --check scripts/team.mjs",
+    "pack:check": "npm pack --dry-run"
   }
 }

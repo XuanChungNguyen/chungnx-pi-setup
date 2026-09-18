@@ -19,6 +19,7 @@ jobs:
           node-version: '24.18.0'
       - run: npm run check
       - run: npm test
+      - run: npm run pack:check
       - run: npm run doctor
   runtime-resolution:
     runs-on: ubuntu-latest

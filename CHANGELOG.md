@@ -2,6 +2,7 @@
 
 ## 0.1.0 — candidate, not yet published
 
+- Run `pi-setup` and `pi-team` directly through `npx` without a manual clone.
 - Cross-platform Node CLI with Bash compatibility entrypoints.
 - File-only scratch, dry-run, canonical path guards and strict external allowlist.
 - Transaction journals, automatic rollback on write errors and explicit rollback

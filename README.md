@@ -12,6 +12,25 @@ và [nguồn gốc/giấy phép](RIGHTS.md). Không xem test cấu hình là b�
 Cần Node **24.18.0+ trong nhánh 24**. Cài Git nếu dùng chức năng khởi tạo dự án.
 Không cần cài Pi global; runtime được cài riêng trong thư mục Pi được chọn.
 
+### Chạy ngay, không clone
+
+Npm tải source vào cache rồi chạy CLI; không tạo thư mục repo trong máy:
+
+```powershell
+npx --yes --package="github:XuanChungNguyen/chungnx-pi-setup#feat/reliable-template" pi-setup setup --profile coding --provider openai-codex --model gpt-5.6-sol
+```
+
+Sau khi PR #1 được merge, bỏ phần `#feat/reliable-template` để dùng nhánh mặc định:
+
+```powershell
+npx --yes --package="github:XuanChungNguyen/chungnx-pi-setup" pi-setup setup --profile coding --provider openai-codex --model gpt-5.6-sol
+```
+
+Npm lưu bản tải trong cache. Muốn kiểm soát source, review thay đổi hoặc đóng góp
+thì dùng cách clone bên dưới.
+
+### Dùng từ bản clone
+
 Một lệnh sau khi clone (thay model bằng ID dùng được với tài khoản của bạn):
 
 ```bash
