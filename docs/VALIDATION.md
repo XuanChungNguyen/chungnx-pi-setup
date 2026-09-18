@@ -1,6 +1,6 @@
 # Validation of candidate 0.1.0
 
-Date: 2026-09-17. Local environment: Windows, Node 24.18.0, npm 11.16.0.
+Date: 2026-09-18. Local environment: Windows, Node 24.18.0, npm 11.16.0.
 
 ## Completed
 
@@ -18,17 +18,21 @@ Date: 2026-09-17. Local environment: Windows, Node 24.18.0, npm 11.16.0.
 - Tests exercised LF/CRLF manifests, traversal/symlink rejection, secret redaction,
   stale managed-file removal, idempotency, full rollback, recovery from write
   failure, refusal to overwrite subsequent edits, and bounded workflow handoffs.
+- GitHub Actions passed on Windows, Ubuntu and macOS. Runtime resolution and audit
+  also passed independently for the minimal, coding and full profiles.
+- A real-model acceptance run completed Planner and Implementer with
+  `openai-codex/gpt-5.6-luna`, then an independent read-only review with
+  `openai-codex/gpt-5.6-sol`. The reviewer returned `VERDICT: PASS`, and a
+  separate local rerun passed all three generated `node:test` cases.
 
 ## Not yet verified
 
-- The configured Windows/Linux/macOS GitHub Actions jobs have not run remotely.
 - Coding/full extension runtime behavior, native/browser/desktop setup and Bun.
-- Authentication validity and real provider responses.
-- Full three-role task with real models and an independent acceptance test.
 - New-user onboarding and upgrade/rollback across different released versions.
 - License selection for the new template and treatment of inherited historical commits.
 
 The installation checks do not run lifecycle scripts; they prove dependency
 resolution and package availability, not readiness of every native feature.
-The unit workflow tests use simulated phase results. No claim of production
-readiness or 10/10 certification is made by this candidate.
+The unit workflow tests use simulated phase results; the separate real-model
+acceptance run validates orchestration behavior but is not a broad benchmark.
+No claim of production readiness or 10/10 certification is made by this candidate.
