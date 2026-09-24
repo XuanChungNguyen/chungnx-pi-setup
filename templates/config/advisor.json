@@ -5,8 +5,8 @@
   "advisorScoutEnabled": false,
   "showUsageFooter": true,
   "advisorRedactSecrets": true,
-  "advisorTrackedFileContent": true,
-  "advisorUntrackedContent": true,
+  "advisorTrackedFileContent": false,
+  "advisorUntrackedContent": false,
   "gateFailureMode": "warn-and-continue",
   "executor": "openai-codex/gpt-5.6-sol",
   "advisor": "anthropic/claude-opus-5"

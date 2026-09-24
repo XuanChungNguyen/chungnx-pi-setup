@@ -1,0 +1,25 @@
+{
+  "name": "pi-setup-runtime-full",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "pi-web-access": "0.29.0",
+    "pi-smart-fetch": "0.3.17",
+    "pi-mcp-adapter": "2.34.0",
+    "pi-subagents": "0.68.0",
+    "pi-memory": "0.4.2",
+    "pi-simplify": "0.2.3",
+    "pi-lens": "4.2.0",
+    "pi-footer": "0.5.1",
+    "pi-model-fallback": "0.4.0",
+    "pi-advisor-flow": "0.6.0",
+    "@narumitw/pi-usage": "0.60.8",
+    "@tmustier/pi-session-recap": "0.5.0",
+    "@juicesharp/rpiv-ask-user-question": "2.10.1",
+    "@juicesharp/rpiv-btw": "2.10.1",
+    "pi-browser-use": "0.11.7",
+    "@injaneity/pi-computer-use": "0.5.1",
+    "@99percentpeople/pi-todo": "1.2.7"
+  }
+}
