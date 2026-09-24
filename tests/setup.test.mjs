@@ -102,6 +102,17 @@ for(const profile of ['minimal','coding','full'])test(`${profile} generated conf
   const lock=JSON.parse(fs.readFileSync(path.join(out,'runtime/package-lock.json')));lock.packages[''].dependencies['@earendil-works/pi-coding-agent']='0.0.0';fs.writeFileSync(path.join(out,'runtime/package-lock.json'),JSON.stringify(lock));
   assert.notEqual(f.run('doctor','--from-config',out,'--strict').status,0);
 });
+for(const profile of ['coding','full'])test(`${profile} config works without an explicit advisor`,t=>{
+  const f=fixture(t),out=path.join(f.root,'generated');
+  const r=f.run('configure','--profile',profile,'--provider','test','--model','executor','--output',out);
+  assert.equal(r.status,0,r.output);
+  const advisor=JSON.parse(fs.readFileSync(path.join(out,'advisor.json'),'utf8'));
+  const settings=JSON.parse(fs.readFileSync(path.join(out,'settings.json'),'utf8'));
+  assert.equal(advisor.executor,'test/executor');
+  assert.equal(advisor.advisor,'test/executor');
+  assert.deepEqual(settings.enabledModels,['test/executor']);
+  assert.equal(f.run('doctor','--from-config',out,'--strict').status,0);
+});
 test('backup refuses unsupported scratch flag rather than writing',t=>{const f=fixture(t);const out=path.join(f.root,'output');assert.notEqual(f.run('backup','--scratch','--config-dir',out).status,0);assert.equal(fs.existsSync(out),false);});
 test('restore is idempotent',t=>{const f=fixture(t);assert.equal(f.run('restore','--from-config',f.source).status,0);const r=f.run('restore','--from-config',f.source);assert.equal(r.status,0,r.output);assert.deepEqual(JSON.parse(r.stdout).changed,[]);assert.equal(JSON.parse(r.stdout).journal,null);});
 test('write failure restores already-written files',t=>{

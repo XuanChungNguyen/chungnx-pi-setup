@@ -14,13 +14,14 @@ Không cần cài Pi global; runtime được cài riêng trong thư mục Pi đ
 
 ### Chạy ngay, không clone
 
-Npm tải source vào cache rồi chạy CLI; không tạo thư mục repo trong máy:
+Npm tải source vào cache rồi chạy CLI; không tạo thư mục repo trong máy.
+Với profile `coding`, advisor mặc định dùng cùng model đã chọn:
 
 ```powershell
 npx --yes --package="github:XuanChungNguyen/chungnx-pi-setup#feat/reliable-template" pi-setup setup --profile coding --provider openai-codex --model gpt-5.6-sol
 ```
 
-Sau khi PR #1 được merge, bỏ phần `#feat/reliable-template` để dùng nhánh mặc định:
+Chỉ sau khi PR #1 được merge, bỏ phần `#feat/reliable-template` để dùng nhánh mặc định:
 
 ```powershell
 npx --yes --package="github:XuanChungNguyen/chungnx-pi-setup" pi-setup setup --profile coding --provider openai-codex --model gpt-5.6-sol
@@ -85,6 +86,8 @@ node scripts/pi-setup.mjs configure --profile coding --provider openai-codex --m
 ```
 
 Configure chỉ ghi vào thư mục rỗng; tạo thư mục mới khi đổi profile/nâng cấp.
+Nếu không truyền `--advisor`, profile `coding` và `full` dùng model chính
+làm advisor; truyền ID khác để tách hai vai trò.
 Fallback mặc định tắt để tránh tự chuyển dữ liệu sang provider khác. Advisor bật
 redaction và tắt gửi nội dung file tracked/untracked mặc định; vẫn cần xem xét
 dữ liệu hội thoại gửi tới provider. `warn-and-continue` là cổng tư vấn, không phải

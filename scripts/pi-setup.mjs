@@ -129,10 +129,11 @@ function configure(options, returnFiles = false) {
   settings.defaultProvider=provider; settings.defaultModel=model; settings.enabledModels=[`${provider}/${model}`];
   const files={'settings.json':Buffer.from(JSON.stringify(settings,null,2)+'\n')};
   if(spec.profiles[profile].includes('pi-advisor-flow')) {
-    if(!options.advisor || !/^[\w.-]+\/[\w.-]+$/.test(options.advisor)) fail('This profile needs --advisor provider/model');
+    const advisorModel=options.advisor || `${provider}/${model}`;
+    if(!/^[\w.-]+\/[\w.-]+$/.test(advisorModel)) fail('Supply --advisor provider/model');
     const advisor=json(path.join(root,'templates/config/advisor.json'));
-    advisor.executor=`${provider}/${model}`;advisor.advisor=options.advisor;
-    settings.enabledModels=[...new Set([...settings.enabledModels,options.advisor])];
+    advisor.executor=`${provider}/${model}`;advisor.advisor=advisorModel;
+    settings.enabledModels=[...new Set([...settings.enabledModels,advisorModel])];
     files['settings.json']=Buffer.from(JSON.stringify(settings,null,2)+'\n');
     files['advisor.json']=Buffer.from(JSON.stringify(advisor,null,2)+'\n');
   }
